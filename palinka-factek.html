@@ -363,9 +363,15 @@
   // Elküldi a widget tényleges magasságát a szülőoldalnak (postMessage-en
   // keresztül, mivel az iframe másik domainről töltődik be), hogy az iframe
   // pontosan akkora legyen, mint a tartalom - se görgetősáv, se üres hely.
+  let lastPostedHeight = null;
   function postHeight(){
-    const h = widgetEl.getBoundingClientRect().height;
-    window.parent.postMessage({ type: 'palinka-fact-resize', height: Math.ceil(h) }, '*');
+    const h = Math.ceil(widgetEl.getBoundingClientRect().height);
+    // csak akkor küldünk, ha a magasság ténylegesen változott - enélkül az
+    // iframe átméretezése saját magát váltaná ki újra (resize esemény a
+    // gyermek oldalon), ami végtelen körbe futtatná az újramérést
+    if (h === lastPostedHeight) return;
+    lastPostedHeight = h;
+    window.parent.postMessage({ type: 'palinka-fact-resize', height: h }, '*');
   }
 
   // Előre lemérjük, hogy a 20 fact közül melyiknek a legmagasabb a kártyája,
@@ -387,20 +393,19 @@
     }
 
     cardEl.style.minHeight = maxH + 'px';
-    // visszaállítjuk az eredeti (üres) állapotot, mielőtt showFact elindítja a ciklust
-    titleEl.textContent = '';
-    textEl.textContent = '';
-    // egy kényszerített reflow után visszakapcsoljuk az átmenetet
-    void cardEl.offsetHeight;
-    cardEl.style.transition = originalTransition;
+    // visszaírjuk az ÉPPEN AKTUÁLISAN látszó fact tartalmát - nem hagyjuk
+    // üresen, mert az üres állapot csak showFact() hívásakor tölt vissza
+    const currentParsed = parseFact(FACTS[current]);
+    titleEl.textContent = currentParsed.title;
+    textEl.textContent = currentParsed.body;
 
-    postHeight();
+    void cardEl.offsetHeight; // kényszerített reflow
+    cardEl.style.transition = originalTransition;
   }
 
   function startShow(){
     lockCardHeight();
     showFact(current);
-    postHeight();
   }
 
   window.addEventListener('load', postHeight);
