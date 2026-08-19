@@ -277,6 +277,14 @@
       remainingMs = DISPLAY_MS;
       startProgressBar(DISPLAY_MS);
       scheduleAdvance(DISPLAY_MS);
+
+      // azonnal jelezzük az új magasságot a szülőoldalnak, ne kelljen
+      // megvárni a 0,5 mp-es polling ciklust - ez előzi meg, hogy hosszabb
+      // szövegnél egy pillanatra megjelenjen a görgetősáv
+      postHeight();
+      // a fade-in átmenet (0.5s) végén még egyszer, a végleges,
+      // beállt magassággal is újraküldjük
+      setTimeout(postHeight, 500);
     }, 350);
   }
 
