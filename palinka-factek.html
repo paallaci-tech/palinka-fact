@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="hu">
 <head>
@@ -251,7 +252,22 @@
   widgetEl.addEventListener('mouseenter', pause);
   widgetEl.addEventListener('mouseleave', resume);
 
+  // --- Iframe automatikus magasság-igazítás ---
+  // Elküldi a widget tényleges magasságát a szülőoldalnak (postMessage-en
+  // keresztül, mivel az iframe másik domainről töltődik be), hogy az iframe
+  // pontosan akkora legyen, mint a tartalom - se görgetősáv, se üres hely.
+  function postHeight(){
+    const h = widgetEl.getBoundingClientRect().height;
+    window.parent.postMessage({ type: 'palinka-fact-resize', height: Math.ceil(h) }, '*');
+  }
+
+  window.addEventListener('load', postHeight);
+  window.addEventListener('resize', postHeight);
+
   showFact(current);
+  // a szöveg cserélődése (fade-in, 350ms) után is újramérünk, mivel
+  // a diánként eltérő szöveghossz miatt a magasság kissé változhat
+  setInterval(postHeight, 500);
 </script>
 
 </body>
