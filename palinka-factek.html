@@ -368,13 +368,57 @@
     window.parent.postMessage({ type: 'palinka-fact-resize', height: Math.ceil(h) }, '*');
   }
 
-  window.addEventListener('load', postHeight);
-  window.addEventListener('resize', postHeight);
+  // Előre lemérjük, hogy a 20 fact közül melyiknek a legmagasabb a kártyája,
+  // és a kártyát erre a rögzített magasságra állítjuk. Így diaváltáskor a
+  // widget mérete SOHA nem változik, tehát a szülőoldalnak sincs mit
+  // újraküldeni - ez zárja ki, hogy egy pillanatra felvillanjon a görgetősáv.
+  function lockCardHeight(){
+    const originalTransition = cardEl.style.transition;
+    cardEl.style.transition = 'none';
+    cardEl.style.minHeight = '0px';
 
-  showFact(current);
-  // a szöveg cserélődése (fade-in, 350ms) után is újramérünk, mivel
-  // a diánként eltérő szöveghossz miatt a magasság kissé változhat
-  setInterval(postHeight, 500);
+    let maxH = 0;
+    for (let i = 0; i < FACTS.length; i++){
+      const parsed = parseFact(FACTS[i]);
+      titleEl.textContent = parsed.title;
+      textEl.textContent = parsed.body;
+      const h = cardEl.scrollHeight;
+      if (h > maxH) maxH = h;
+    }
+
+    cardEl.style.minHeight = maxH + 'px';
+    // visszaállítjuk az eredeti (üres) állapotot, mielőtt showFact elindítja a ciklust
+    titleEl.textContent = '';
+    textEl.textContent = '';
+    // egy kényszerített reflow után visszakapcsoljuk az átmenetet
+    void cardEl.offsetHeight;
+    cardEl.style.transition = originalTransition;
+
+    postHeight();
+  }
+
+  function startShow(){
+    lockCardHeight();
+    showFact(current);
+    postHeight();
+  }
+
+  window.addEventListener('load', postHeight);
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      lockCardHeight();
+      postHeight();
+    }, 200);
+  });
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(startShow);
+  } else {
+    startShow();
+  }
 </script>
 
 </body>
