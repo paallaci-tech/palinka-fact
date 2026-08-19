@@ -410,8 +410,16 @@
 
   window.addEventListener('load', postHeight);
 
+  // csak akkor mérünk újra, ha a SZÉLESSÉG ténylegesen megváltozott (pl.
+  // elforgatás vagy más ablakméret). A puszta magasság-változást (pl. mobil
+  // böngészők címsorának be/kicsúszása görgetéskor) figyelmen kívül hagyjuk,
+  // mert az nem hat a szövegtördelésre, csak felesleges újramérést és
+  // ugrálást okozna.
+  let lastWidth = window.innerWidth;
   let resizeTimer = null;
   window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       lockCardHeight();
