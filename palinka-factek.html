@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pálinka fun factek</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #272727;
+    font-family: 'Poppins', Arial, sans-serif;
+  }
+
+  .fact-widget {
+    width: 100%;
+    min-height: 320px;
+    background: #272727;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fact-card {
+    background: #313131;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 28px 40px 32px;
+    max-width: 640px;
+    width: 100%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .fact-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fact-widget:hover .fact-card {
+    box-shadow: 0 10px 28px rgba(0,0,0,0.32);
+  }
+
+  .card-progress-track {
+    width: 100%;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+
+  @keyframes shrinkBar {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
+
+  .card-progress-bar {
+    height: 100%;
+    width: 100%;
+    border-radius: 4px;
+    background: #C16F56;
+    transform-origin: left;
+    transform: scaleX(1);
+  }
+
+  .fact-title {
+    color: #ffffff;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .fact-text {
+    color: rgba(255,255,255,0.7);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.65;
+    text-align: center;
+    letter-spacing: 0.1px;
+  }
+
+  .fact-text .accent {
+    color: #C16F56;
+    font-weight: 700;
+  }
+
+  .dots {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    display: flex;
+    gap: 6px;
+  }
+
+  .dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.18);
+    transition: background 0.3s ease;
+  }
+
+  .dots span.active {
+    background: #C16F56;
+  }
+
+  .counter {
+    position: absolute;
+    top: 20px;
+    left: 24px;
+    color: rgba(255,255,255,0.35);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 600px) {
+    .fact-widget { min-height: 260px; padding: 40px 20px; }
+    .fact-title { font-size: 17px; }
+    .fact-text { font-size: 14px; }
+    .dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="fact-widget" id="widget">
+  <div class="counter" id="counter">01 / 20</div>
+  <div class="fact-card" id="factCard">
+    <div class="card-progress-track">
+      <div class="card-progress-bar" id="progressBar"></div>
+    </div>
+    <div class="fact-title" id="factTitle"></div>
+    <div class="fact-text" id="factText"></div>
+  </div>
+</div>
+
+<script>
+  const FACTS = [
+    "🇭🇺 Csak Magyarországon termett gyümölcsből lehet pálinka. A „pálinka” elnevezés nem használható akármilyen gyümölcspárlatra. A pálinkának Magyarországon termett gyümölcsből kell készülnie, és a cefrézésnek, párlásnak, érlelésnek és palackozásnak is Magyarországon kell történnie.",
+    "🍑 A pálinka nem egyszerűen gyümölcsízű alkohol. A valódi pálinkánál maga a gyümölcs és annak természetes aromái adják a párlat karakterét. Ezért számít ennyit az alapanyag minősége.",
+    "🍎 A pálinka története már a gyümölcsnél elkezdődik. A lepárlóberendezés önmagában nem tud csodát tenni. A gyümölcs érettsége, minősége és a cefre megfelelő elkészítése alapvetően meghatározza, milyen párlat készülhet belőle.",
+    "🥣 A cefre nem csak „összetört gyümölcs”. A cefrézés során a gyümölcsöt úgy kell előkészíteni, hogy az erjedés számára megfelelő alapanyag jöjjön létre. A gyümölcs feldolgozása, az erjedés körülményei és a cefre kezelése mind hatással lehet a későbbi párlatra.",
+    "🍇 Az élesztő fontos szereplője a folyamatnak. Az erjedés során az élesztő a gyümölcsben található cukrok egy részét alkohollá alakítja. Ez az alkohol lesz később a lepárlás egyik legfontosabb kiindulási pontja.",
+    "⚗️ A lepárlás valójában szétválasztási folyamat. A lepárlás során nem egyszerűen „elforralják” a cefrét. A különböző illékony komponensek eltérő módon viselkednek, ezért a lepárlás segítségével koncentrálható és elválasztható az alkohol, valamint számos aromaanyag.",
+    "🔥 A túl gyors főzés nem feltétlenül jobb. A lepárlásnál nem az a cél, hogy minél hamarabb elkészüljön a párlat. A fűtés és a lepárlás megfelelő szabályozása fontos szerepet játszik a kívánt minőség elérésében.",
+    "🥃 Van elő-, közép- és utópárlat. A lepárlás során különböző frakciók jelennek meg. A főzőmester feladata, hogy megfelelően elkülönítse azokat, és a kívánt minőségű középpárlatot válassza ki.",
+    "🍐 Ugyanannyi cefréből nem feltétlenül ugyanannyi pálinka lesz. A kihozatal függ többek között a gyümölcs fajtájától, érettségétől, cukortartalmától és a cefre erjedésétől. Ezért 100 liter cefrére sem lehet minden esetben ugyanannyi kész párlatot ígérni.",
+    "⚙️ A lepárlóberendezés kialakítása is számít. Az üst, a páracső, a hűtés és a különböző finomító elemek kialakítása mind hatással lehet a lepárlás folyamatára és a kész párlat karakterére.",
+    "🔥 A kisüsti és az egylépcsős technológia nem ugyanaz. A kisüsti, kétlépcsős lepárlás során a cefréből először alszesz készül, majd egy második lepárlással finomítják azt. Az egylépcsős rendszerek ezzel szemben egy lepárlási folyamatban állítják elő a párlatot.",
+    "🥃 A párlat és a pálinka nem ugyanaz. Minden pálinka párlat, de nem minden gyümölcspárlat nevezhető pálinkának. A „pálinka” megnevezés használatát külön jogszabályok szabályozzák.",
+    "🇭🇺 A pálinka hungarikum. A pálinka Magyarország egyik legismertebb nemzeti terméke, amelynek előállítását és megnevezését külön magyar szabályozás is védi.",
+    "🌳 Nem mindegy, honnan származik a gyümölcs. A pálinka egyik különlegessége éppen az, hogy a magyarországi gyümölcsből készülő párlatnak sajátos termőhelyi és gyümölcsfajta-jellege lehet. A gyümölcs származása jogilag is fontos a „pálinka” megnevezés használatánál.",
+    "🍑 A gyümölcs fajtája meghatározza a párlat karakterét. Más aromákat és más összetételt ad egy kajszibarack, egy szilva, egy körte vagy egy alma. Éppen ezért minden gyümölcs más technológiai megközelítést igényelhet.",
+    "👃 A jó pálinkát nem csak inni lehet – érdemes szagolni is. A pálinka aromáinak jelentős része már illat alapján érzékelhető. Egy megfelelő pálinkáspohár segíthet abban, hogy az illatokat koncentráltabban érezd.",
+    "🥂 A pohár sem mindegy. A tulipán alakú pálinkáspohár formája segíthet az aromák összegyűjtésében, így kóstoláskor jobban érzékelhetők a párlat illatjegyei.",
+    "💧 A párlat alkoholfokát be lehet állítani. A lepárlás után a párlat alkoholtartalma általában magasabb annál, mint ahogy fogyasztani szeretnénk. A kész párlatot megfelelő minőségű vízzel a kívánt alkoholfokra lehet beállítani.",
+    "⏳ Egyes párlatoknak jót tehet a pihentetés. A beállított párlatnak időre lehet szüksége ahhoz, hogy az alkohol, a víz és az aromaanyagok egyenletesebben összeálljanak. Ezért a frissen beállított párlat és a később pihentetett pálinka érzékelhetően eltérhet egymástól.",
+    "🏭 A pálinkafőzés ma már komoly technológia. Egy modern pálinkafőzde nem egyszerűen egy üstből áll. A cefre fogadásától és kezelésétől a lepárláson át egészen a hűtésig és a párlat kezeléséig összehangolt technológiai rendszer dolgozik a háttérben."
+  ];
+
+  const DISPLAY_MS = 6000; // ennyi ideig látszik egy fact (elolvasható tempó)
+
+  let current = 0;
+  let remainingMs = DISPLAY_MS;
+  let segmentStart = null;
+  let advanceTimer = null;
+  let paused = false;
+
+  const titleEl = document.getElementById('factTitle');
+  const textEl = document.getElementById('factText');
+  const cardEl = document.getElementById('factCard');
+  const counterEl = document.getElementById('counter');
+  const progressBar = document.getElementById('progressBar');
+  const widgetEl = document.getElementById('widget');
+
+  function pad(n){ return n < 10 ? '0' + n : '' + n; }
+
+  // levágja a vezető emojit/szimbólumokat, majd szétválasztja az első
+  // mondatot (cím) a maradék szövegtől (törzsszöveg)
+  function parseFact(raw){
+    const cleaned = raw.replace(/^[^\p{L}]+/u, '').trim();
+    const match = cleaned.match(/^(.+?[.!?])\s+([\s\S]+)$/);
+    if (match) {
+      return { title: match[1].replace(/\.$/, ''), body: match[2] };
+    }
+    return { title: cleaned, body: '' };
+  }
+
+  function startProgressBar(ms){
+    progressBar.style.animation = 'none';
+    progressBar.style.transform = 'scaleX(1)';
+    void progressBar.offsetWidth; // kényszerített reflow az újraindításhoz
+    progressBar.style.animation = 'shrinkBar ' + ms + 'ms linear forwards';
+  }
+
+  function showFact(index){
+    cardEl.classList.remove('visible');
+
+    setTimeout(() => {
+      const parsed = parseFact(FACTS[index]);
+      titleEl.textContent = parsed.title;
+      textEl.textContent = parsed.body;
+      counterEl.textContent = pad(index + 1) + ' / ' + FACTS.length;
+      cardEl.classList.add('visible');
+
+      remainingMs = DISPLAY_MS;
+      startProgressBar(DISPLAY_MS);
+      scheduleAdvance(DISPLAY_MS);
+    }, 350);
+  }
+
+  function next(){
+    current = (current + 1) % FACTS.length;
+    showFact(current);
+  }
+
+  function scheduleAdvance(ms){
+    clearTimeout(advanceTimer);
+    segmentStart = Date.now();
+    advanceTimer = setTimeout(next, ms);
+  }
+
+  function pause(){
+    if (paused) return;
+    paused = true;
+    clearTimeout(advanceTimer);
+    remainingMs -= (Date.now() - segmentStart);
+    if (remainingMs < 0) remainingMs = 0;
+    progressBar.style.animationPlayState = 'paused';
+  }
+
+  function resume(){
+    if (!paused) return;
+    paused = false;
+    progressBar.style.animationPlayState = 'running';
+    scheduleAdvance(remainingMs);
+  }
+
+  widgetEl.addEventListener('mouseenter', pause);
+  widgetEl.addEventListener('mouseleave', resume);
+
+  showFact(current);
+</script>
+
+</body>
+</html>
